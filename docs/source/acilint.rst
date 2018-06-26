@@ -145,15 +145,29 @@ Warnings
 |warning_010 |EPG providing contract but consuming EPG is |
 |            |in a different context                      |
 +------------+--------------------------------------------+
+|warning_011 |Contract contains bi-directional TCP        |
+|            |Subjects                                    |
++------------+--------------------------------------------+
+|warning_012 |Contract contains bi-directional UDP        |
+|            |Subjects                                    |
++------------+--------------------------------------------+
+|warning_013 |Contract has no Subjects                    |
++------------+--------------------------------------------+
+|warning_014 |Contract has Subjects with no Filters       |
++------------+--------------------------------------------+
 
 Errors
 ~~~~~~
 
-+------------+--------------------------------------------+
-|error_001   |BridgeDomain has no context                 |
-+------------+--------------------------------------------+
-|error_002   |EPG has no BD assigned                      |
-+------------+--------------------------------------------+
++------------+---------------------------------------------+
+|error_001   |BridgeDomain has no context                  |
++------------+---------------------------------------------+
+|error_002   |EPG has no BD assigned                       |
++------------+---------------------------------------------+
+|error_005   |Duplicate or overlapping subnets in Context  |
++------------+---------------------------------------------+
+|error_006   |ExternalNetwork Subnets duplicated in fabric |
++------------+---------------------------------------------+
 
 Critical
 ~~~~~~~~
@@ -161,7 +175,7 @@ Critical
 +-------------+--------------------------------------------+
 |critical_001 |Compliance check example                    |
 +-------------+--------------------------------------------+
-	     
+
 critical_001 is a compliance check example that will perform the
 following:
 

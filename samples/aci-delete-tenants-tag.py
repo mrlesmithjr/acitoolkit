@@ -28,76 +28,52 @@
 #                                                                              #
 ################################################################################
 """
-Simple demonstration application configuring a basic ACI fabric
+delete a tag from a tenant or all tenants
 """
-from acitoolkit.acisession import Session
-from acitoolkit.acitoolkit import Credentials, Tenant, AppProfile, EPG
-from acitoolkit.acitoolkit import Context, BridgeDomain, Contract, FilterEntry
+
+
+import acitoolkit.acitoolkit as aci
 
 
 def main():
-    """ Create 2 EPGs within the same Context and have
-        1 EPG provide a contract to the other EPG.
-    """
-    description = ('Create 2 EPGs within the same Context and have'
-                   '1 EPG provide a contract to the other EPG.')
-    creds = Credentials('apic', description)
+
+    # Get the APIC login credentials
+    description = 'testing tags'
+    creds = aci.Credentials('apic', description)
+    creds.add_argument('--tenant', help='delete this tag from the given tenant')
+    creds.add_argument('--tag', help='the tag to be deleted')
     args = creds.get()
 
-    # Create the Tenant
-    tenant = Tenant('aci-toolkit-demo')
-
-    # Create the Application Profile
-    app = AppProfile('my-demo-app', tenant)
-
-    # Create the EPGs
-    web_epg = EPG('web-frontend', app)
-    db_epg = EPG('database-backend', app)
-    web_epg.set_intra_epg_isolation(False)
-    db_epg.set_intra_epg_isolation(True)
-
-    # Create a Context and BridgeDomain
-    # Place both EPGs in the Context and in the same BD
-    context = Context('VRF-1', tenant)
-    bd = BridgeDomain('BD-1', tenant)
-    bd.add_context(context)
-    web_epg.add_bd(bd)
-    db_epg.add_bd(bd)
-
-    # Define a contract with a single entry
-    contract = Contract('mysql-contract', tenant)
-    entry1 = FilterEntry('entry1',
-                         applyToFrag='no',
-                         arpOpc='unspecified',
-                         dFromPort='3306',
-                         dToPort='3306',
-                         etherT='ip',
-                         prot='tcp',
-                         sFromPort='1',
-                         sToPort='65535',
-                         tcpRules='unspecified',
-                         parent=contract)
-
-    # Provide the contract from 1 EPG and consume from the other
-    db_epg.provide(contract)
-    web_epg.consume(contract)
-
+    if not args.tag:
+        print("please pass tag argument")
+        return
     # Login to APIC and push the config
-    session = Session(args.url, args.login, args.password)
-    session.login()
-    
-    # Cleanup (uncomment the next line to delete the config)
-    #tenant.mark_as_deleted()
-    resp = tenant.push_to_apic(session)
+    session = aci.Session(args.url, args.login, args.password)
+    resp = session.login()
+    if not resp.ok:
+        print('%% Could not login to APIC')
+        return
+    # Get tenants from the APIC
+    if args.tenant:
+        tenants = aci.Tenant.get_deep(session, limit_to=['tagInst'], names=[args.tenant])
+    else:
+        # Get all Tenants within APIC
+        tenants = aci.Tenant.get(session)
+        names_tenants = [tenant.name for tenant in tenants]
+        tenants = aci.Tenant.get_deep(session, limit_to=['tagInst'], names=names_tenants)
+    # get all EPGs with their tag
+    for tenant in tenants:
+        tenant.delete_tag(args.tag)
+        resp = tenant.push_to_apic(session)
+        if resp.ok:
+            print ('Success')
 
-    if resp.ok:
         # Print what was sent
-        print('Pushed the following JSON to the APIC')
-        print('URL: ' + str(tenant.get_url()))
-        print('JSON: ' + str(tenant.get_json()))
+        print ('Pushed the following JSON to the APIC')
+        print ('URL:', tenant.get_url())
+        print ('JSON:', tenant.get_json())
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    main()
+
+
